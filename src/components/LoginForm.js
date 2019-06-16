@@ -1,16 +1,62 @@
 import React, { Component } from 'react';
-import { Button, Card, CardSection, Input } from './common';
+import { Text } from 'react-native';
+import firebase from 'firebase';
+import { Button, Card, CardSection, Input, Spinner } from './common';
 
 class LoginForm extends Component {
 
     state = {
         email: '',
-        password: ''
+        password: '',
+        error: '',
+        loading: false
     };
 
-    render() {
-
+    onButtonPress = () => {
         const { email, password } = this.state;
+
+        this.setState({ error: '', loading: true });
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then(this.onLoginSuccess)
+            .catch(() => {
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .then(this.onLoginSuccess)
+                    .catch(this.onLoginFail);
+            });
+    }
+
+    onLoginSuccess = () => {
+        this.setState({ 
+            email: '',
+            password: '',
+            error: '',
+            loading: false 
+        });
+    }
+
+    onLoginFail = () => {
+        this.setState({
+            loading: false,
+            error: 'Authentication Failed.'
+        });
+    }
+
+    renderButton() {
+        if (this.state.loading) {
+            return <Spinner size="small" />
+        }
+
+        return (
+            <Button onPress={this.onButtonPress}>
+                Log In
+            </Button>
+        )
+    }
+
+    render() {
+        const { email, password, error } = this.state;
+        const { errorTextStyle } = styles;
 
         return (
             <Card>
@@ -33,14 +79,25 @@ class LoginForm extends Component {
                     />
                 </CardSection>
 
+                <Text style={errorTextStyle}>
+                    {error}
+                </Text>
+
                 <CardSection>
-                    <Button>
-                        Log in
-                    </Button>
+                    {this.renderButton()}
                 </CardSection>
             </Card>
         );
     }
 }
+
+
+const styles = {
+    errorTextStyle: {
+        fontSize: 20,
+        alignSelf: 'center',
+        color: 'red'
+    }
+};
 
 export default LoginForm
